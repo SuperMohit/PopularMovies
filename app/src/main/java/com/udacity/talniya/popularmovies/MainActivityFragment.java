@@ -5,7 +5,10 @@ import android.content.Intent;
 import android.net.Uri;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -32,7 +35,8 @@ import retrofit.Retrofit;
 public class MainActivityFragment extends Fragment implements View.OnClickListener {
 
     private static final String baseURL = "http://api.themoviedb.org/";
-    private static final String sortBy = "popularity.desc";
+    private static final String POPULARITY = "popularity.desc";
+    private static final String RATED = "vote_average.desc";
     private static final String key ="995ea1569ea5c8712ad558a07ab83e90";
     private static final String imgBaseURL = "http://image.tmdb.org/t/p/w154";
     private PopularMovies popularMovies = null;
@@ -45,10 +49,10 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
                              Bundle savedInstanceState) {
 
         View view = inflater.inflate(R.layout.fragment_main, container, false);
-
+        setHasOptionsMenu(true);
     //    addClickHandler( view );
 
-        getPopularMovies();
+        getMoviesBy( POPULARITY );
 
 
         return view;
@@ -56,22 +60,25 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
 
 
-    private void getPopularMovies(){
+    private void getMoviesBy( String sortBy ){
 
 
         Retrofit retrofit = UdacityUtil.getRetrofit(baseURL);
 
         MovieDbAPI movieAPI = retrofit.create(MovieDbAPI.class);
 
-        Call<PopularMovies> call =  movieAPI.getPopularMovies( sortBy, key);
+        Call<PopularMovies> call =  movieAPI.getPopularMovies(sortBy, key);
 
         call.enqueue(new Callback<PopularMovies>() {
             @Override
             public void onResponse(Response<PopularMovies> response, Retrofit retrofit) {
 
+                getView().findViewById(R.id.loadingPanel).setVisibility(View.GONE);
+
                 popularMovies = response.body();
 
-                if(popularMovies !=null && popularMovies.getMovies().size() > 0)
+
+                if (popularMovies != null && popularMovies.getMovies().size() > 0)
 
                     initPopularMovieDashboard();
 
@@ -87,6 +94,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
 
+
     public void initPopularMovieDashboard(){
 
 
@@ -99,7 +107,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
         int index = 0;
 
-        for(Movie movie : popularMovies.getMovies()) {
+        for( Movie movie : popularMovies.getMovies() ) {
             imgURLs[index] = movie.getPosterPath();
             index ++;
         }
@@ -112,7 +120,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                if(position > -1){
+                if (position > -1) {
                     Intent intent = new Intent(getActivity(), MovieDetailActivity.class);
                     intent.putExtra("Movie", popularMovies.getMovies().get(position));
 
@@ -125,9 +133,29 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        Log.d("Debug information","Item clicked");
+        switch (item.getItemId()) {
+            case R.id.highest_rated:
+                 getMoviesBy(RATED);
+                return true;
+            case R.id.most_popular:
+                 getMoviesBy(POPULARITY);
+                return true;
+
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+
+
+    }
+
+
+    @Override
     public void onClick(View v) {
 
-        getPopularMovies();
+
 
     }
 }
